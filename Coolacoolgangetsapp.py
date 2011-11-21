@@ -25,10 +25,10 @@ class Circle2D:
     def getY(self):
         return self.canvas.coords(self.id)[1] + self.radius
     
-class Collission:
+class Collision:
     def __init__(self, canvas, entity1, entity2, time):
         self.lineid = canvas.create_line(entity1.getX(), entity1.getY(), entity2.getX(), entity2.getY())
-        self.textid = canvas.create_text(entity1.getX() - (entity1.getX() + entity2.getX())/2, entity1.getY() - (entity1.getY() + entity2.getY())/2, text=str(time))
+        self.textid = canvas.create_text(entity1.getX() - (entity1.getX() - entity2.getX())/2, entity1.getY() - (entity1.getY() - entity2.getY())/2, text=str(time))
         self.canvas = canvas
         self.entity1 = entity1
         self.entity2 = entity2
@@ -63,6 +63,7 @@ class World:
         self.canvas.bind("<Button-3>", self.togglePlaying)
         self.canvas.bind("<B1-Motion>", self.moveLine)
         self.canvas.bind("<B1-ButtonRelease>", self.createCircle)
+        self.tk.bind("r", lambda x: self.reset())
 
     def createLine(self, event):        
         self.currentLine = self.canvas.create_line(event.x, event.y, event.x, event.y)
@@ -73,6 +74,7 @@ class World:
 
     def createCircle(self, event):
         coords = self.canvas.coords(self.currentLine)
+        print(coords)
         x1 = coords[0]
         y1 = coords[1]
         x2 = event.x
@@ -80,13 +82,16 @@ class World:
         if(x1==x2 and y1==y2):
             x1-=1
         distance = math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2))
+        velocity = distance
+        print("velocity = " + str(velocity))
         angleInRadians = math.acos((x2-x1)/distance)        
         angleInDegrees = math.degrees(angleInRadians)
         if(y1 > y2):
             angleInDegrees += (180-angleInDegrees)*2        
         radius = random.randint(10,30)
         circleId = self.canvas.create_oval(x1-radius,y1-radius,x1+radius,y1+radius, tags="circle", fill="#"+str(random.randint(100,999)))
-        circle = Circle2D(circleId, self.canvas, angleInDegrees, radius)
+        circle = Circle2D(circleId, self.canvas, angleInDegrees, radius,
+                velocity)
         self.entities.append(circle)
         self.canvas.delete(self.currentLine)
         self.checkFutureCollisions(circle)
@@ -156,13 +161,13 @@ class World:
                 posX = entity.getX() + (entity.vector[0]*time)
                 posY = entity.getY() + (entity.vector[1]*time)
                 if not(posX < 0 or posX > 680 or posY < 0 or posY > 480):                    
-                    self.createCollissionIfNotExisting(entity, other, time)
+                    self.createCollisionIfNotExisting(entity, other, time)
             
-    def createCollissionIfNotExisting(self, entity1, entity2, time):
-        for collission in self.collisions:
-            if (collission.entity1.id == entity1.id and collission.entity2.id == entity2.id) or (collission.entity1.id == entity2.id and collission.entity2.id == entity1.id):
+    def createCollisionIfNotExisting(self, entity1, entity2, time):
+        for collision in self.collisions:
+            if (collision.entity1.id == entity1.id and collision.entity2.id == entity2.id) or (collision.entity1.id == entity2.id and collision.entity2.id == entity1.id):
                 return
-        self.collisions.append(Collission(self.canvas, entity1, entity2, time))
+        self.collisions.append(Collision(self.canvas, entity1, entity2, time))
 
     def getDelta(self, first, second):
         deltaX = second.getX() - first.getX()
@@ -205,6 +210,17 @@ class World:
             entity.setAngle(angle+((180-angle)*2))
             self.checkFutureCollisions(entity)
 
+    def reset(self):
+        print("resetting")
+        for i in self.entities:
+            self.canvas.delete(i.id)
+        self.entities = []
+        for i in self.collisions:
+            self.canvas.delete(i.lineid)
+            self.canvas.delete(i.textid)
+        collisions = []
+        self.playing = False
+
     def togglePlaying(self, event):
         self.playing = not(self.playing)
 
@@ -213,8 +229,8 @@ class World:
             for entity in self.entities:
                 entity.update(elapsedTime)
                 self.checkBounds(entity)
-            for collission in self.collisions:
-                collission.update(elapsedTime)
+            for collision in self.collisions:
+                collision.update(elapsedTime)
             self.checkCollisions()
 
     def endWorld(self):
