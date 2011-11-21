@@ -18,9 +18,16 @@ class Circle2D:
         self.angle = angle
         self.vector = (self.velocity*math.cos(self.angle*(math.pi/180))),(self.velocity*math.sin(self.angle*(math.pi/180)))
 
+    def getX(self):
+        return self.canvas.coords(self.id)[0] + self.radius
+
+    def getY(self):
+        return self.canvas.coords(self.id)[1] + self.radius
+
 class World:
     def __init__(self, tk):
         self.running=True        
+        self.playing=False        
         self.tk = tk        
         self.tk.protocol("WM_DELETE_WINDOW", self.endWorld)
         self.canvas = Canvas(tk, width=640, height=480, bg="white")
@@ -31,6 +38,7 @@ class World:
 
     def initBindings(self):
         self.canvas.bind("<Button-1>", self.createLine)
+        self.canvas.bind("<Button-3>", self.togglePlaying)
         self.canvas.bind("<B1-Motion>", self.moveLine)
         self.canvas.bind("<B1-ButtonRelease>", self.createCircle)
 
@@ -70,20 +78,25 @@ class World:
             print("FPS : " + str(fps))
         self.canvas.update()
 
-    def collisionCheck(self, entity):
-        for other in self.entities:
-            coords = self.canvas.coords(entity.id)
-            x1 = coords[0]+10
-            y1 = coords[1]+10
-            r1 = entity.radius
-            coords = self.canvas.coords(other.id)
-            x2 = coords[0]+10
-            y2 = coords[1]+10
-            r2 = entity.radius
-            distanceSq = math.pow((x1-x2),2)+math.pow((y1-y2),2)
-            if(r1*r2 > distanceSq):
-                entity.setAngle(entity.angle-180)
-                other.setAngle(other.angle-180)
+    def checkCollisions(self):
+        current = 1
+        for entity in self.entities:
+            for other in self.entities[current:]:
+                if self.checkCollision(entity, other):
+                    self.handleCollision(entity, other)
+            current += 1
+
+    def checkCollision(self, first, second):
+        distanceSquared = math.pow(first.getX() - second.getX(), 2) + math.pow(first.getY() - second.getY(), 2)
+        collisionDistanceSquared = math.pow(first.radius + second.radius, 2)
+        if (collisionDistanceSquared >= distanceSquared):
+            return True
+        return False
+
+    def handleCollision(self, first, second):
+        print("colliding")
+        first.setAngle(first.angle - 180)
+        second.setAngle(second.angle - 180)
 
     def checkBounds(self, entity):
         coords = self.canvas.coords(entity.id)
@@ -101,11 +114,15 @@ class World:
             angle = entity.angle
             entity.setAngle(angle+((180-angle)*2))
 
+    def togglePlaying(self, event):
+        self.playing = not(self.playing)
+
     def update(self):
-        for entity in self.entities:
-            entity.update()
-            self.checkBounds(entity)
-            self.collisionCheck(entity)            
+        if self.playing:
+            for entity in self.entities:
+                entity.update()
+                self.checkBounds(entity)
+            self.checkCollisions()            
 
     def endWorld(self):
         self.running=False
