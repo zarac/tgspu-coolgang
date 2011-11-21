@@ -3,7 +3,7 @@ import math
 import time
 
 class Circle2D:
-    def __init__(self, id, canvas, angle, radius=10, velocity=3):
+    def __init__(self, id, canvas, angle, radius=10, velocity=5):
         self.angle = angle
         self.radius = radius
         self.id = id
@@ -13,6 +13,10 @@ class Circle2D:
 
     def update(self):
         self.canvas.move(self.id, self.vector[0], self.vector[1])
+
+    def setAngle(self, angle):
+        self.angle = angle
+        self.vector = (self.velocity*math.cos(self.angle*(math.pi/180))),(self.velocity*math.sin(self.angle*(math.pi/180)))
 
 class World:
     def __init__(self, tk):
@@ -43,17 +47,19 @@ class World:
         y1 = coords[1]
         x2 = event.x
         y2 = event.y
+        if(x1==x2 and y1==y2):
+            x1-=1
         distance = math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2))
         angleInRadians = math.acos((x2-x1)/distance)        
         angleInDegrees = math.degrees(angleInRadians)
         if(y1 > y2):
-            angleInDegrees += (180-angleInDegrees)*2
-        print(distance, angleInDegrees)
+            angleInDegrees += (180-angleInDegrees)*2        
         radius = 10
         circleId = self.canvas.create_oval(x1-radius,y1-radius,x1+radius,y1+radius, tags="circle", fill="yellow")
-        circle = Circle2D(circleId, self.canvas, angleInDegrees, 10)
+        circle = Circle2D(circleId, self.canvas, angleInDegrees, radius)
         self.entities.append(circle)
         self.canvas.delete(self.currentLine)
+        print(circleId, angleInDegrees)
 
     def loop(self):
         currentTime = time.time()
@@ -62,10 +68,42 @@ class World:
             self.update()
         self.canvas.update()
 
+    def collisionCheck(self, entity):
+        for other in self.entities:
+            coords = self.canvas.coords(entity.id)
+            x1 = coords[0]+10
+            y1 = coords[1]+10
+            r1 = entity.radius
+            coords = self.canvas.coords(other.id)
+            x2 = coords[0]+10
+            y2 = coords[1]+10
+            r2 = entity.radius
+            distanceSq = math.pow((x1-x2),2)+math.pow((y1-y2),2)
+            if(r1*r2 > distanceSq):
+                entity.setAngle(entity.angle-180)
+                other.setAngle(other.angle-180)
+
+    def checkBounds(self, entity):
+        coords = self.canvas.coords(entity.id)
+        x = coords[0]
+        y = coords[1]     
+        radius = entity.radius
+        #w = self.canvas["width"]
+        w = 640
+        #h = self.canvas["height"]
+        h = 480
+        if(x <= 0 or x+radius*2 >= w):
+            angle = entity.angle
+            entity.setAngle(angle+180-((angle-180)*2))
+        elif(y <= 0 or y+radius*2 >= h):
+            angle = entity.angle
+            entity.setAngle(angle+((180-angle)*2))
+
     def update(self):
         for entity in self.entities:
             entity.update()
-            
+            self.checkBounds(entity)
+            self.collisionCheck(entity)            
 
     def endWorld(self):
         self.running=False
