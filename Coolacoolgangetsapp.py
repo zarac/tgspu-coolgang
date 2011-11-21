@@ -183,7 +183,7 @@ class World:
 
     def removeCollisionObject(self, first, second):
         for collision in self.collisions:
-            if (collision.entity1.id == first.id and collision.entity2.id == second.id) or (collision.entity1.id == second.id and collision.entity2.id == first.id):
+            if collision.entity1.id == first.id or collision.entity2.id == first.id or collision.entity1.id == second.id or collision.entity2.id == second.id:
                 collision.destroyMe()
                 self.collisions.remove(collision)
 
