@@ -64,8 +64,10 @@ class World:
     def loop(self):
         currentTime = time.time()
         if(currentTime - self.lastUpdateTime > 1/30):
+            fps = 1/(currentTime - self.lastUpdateTime)
             self.lastUpdateTime = currentTime
             self.update()
+            print("FPS : " + str(fps))
         self.canvas.update()
 
     def collisionCheck(self, entity):
