@@ -1,0 +1,101 @@
+Rapport Seminarium 1 - Grupp Cool Gang
+======================================
+Hannes Landstedt
+Hektor Walli
+Robin Johansson
+
+Matematiska Begrepp
+===================
+
+# INFO : Uträkning av vektor med hjälp av vinkel och hastighet. 
+self.vector = (self.velocity * math.cos(self.angle * (math.pi / 180))), (self.velocity * math.sin(self.angle * (math.pi / 180)))
+
+# INFO : Räknar ut avståndet med hälp av Pythagoras sats
+distance = math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2))
+
+# INFO : Räknar ut vinkeln med hjälp av arccos (samt avstådent ovan).
+angleInRadians = math.acos((x2-x1)/distance)
+angleInDegrees = math.degrees(angleInRadians)
+
+# INFO : Kollar faktisk kollision med hjälp av Pythagoras sats. Jämför avståndet mellan sfärernas centrum med deras sammanlagda radie.
+distanceSquared = math.pow(first.x - second.x, 2) + math.pow(first.y - second.y,2) + math.pow(first.z - second.z, 2)
+collisionDistanceSquared = math.pow(first.radius + second.radius, 2)
+if(collisionDistanceSquared >= distanceSquared):
+      return True
+return False
+
+# INFO : För att få ut tiden, t, tills då de två bollarna kolliderar så:
+# INFO : Först hittar vi hur bollarna förhåller sig till varandra genom att sätta dena ena bollen i origo och ger den andra bollan de sammanlagda egenskaperna.
+deltaX, deltaY, deltaZ, deltaRadius, deltaVx, deltaVy, deltaVz = self.getDelta3D(entity, other)
+# INFO : Vi sätter avståndet _mellan_ bollarna till 0 för att hitta när dom kolliderar. (I detta avståndet från bollen till origo).
+# INFO : Med andra ord: avståndet = r => sqrt((X+Vx*t)^2 + (Y+Vy*t)^2 + (Z+Vz*t)^2) = r
+# INFO : Vi tar PQ - formeln : ax^2 + bx + c = 0
+# INFO : Tillämpar den: (Vx^2 + Vy^2 + Vz^2)*t^2 + 2(X*Vx + Y*Vy + Z*Vz)*t + X^2 + Y^2 + Z^2 - r^2 = 0
+# INFO : Vi förenklar ekvationen och delar upp den i tre delar : a, b, & c 
+a = math.pow(deltaVx, 2) + math.pow(deltaVy, 2) + math.pow(deltaVz, 2)
+b = (2*(deltaX*deltaVx)) + (2*(deltaY*deltaVy)) + (2*(deltaZ*deltaVz))
+c = math.pow(deltaX, 2) + math.pow(deltaY, 2) + math.pow(deltaZ, 2) - math.pow(deltaRadius, 2)
+# INFO : Räknar ut högra delen av PQ-formeln (får ej vara mindre än 0).
+d = math.pow((-b)/(2*a), 2) - (c/a)
+
+
+Test Fall
+=========
+* Fall 1 *
+Sphere
+X: 131.0
+Y: 349.0
+Z: 38
+Radius: 20
+Vector: [158.9487887018729, -121.38897219355374, -13]
+Velocity: 200
+Sphere
+X: 425.0
+Y: 87.0
+Z: 54
+Radius: 20
+Vector: [-147.58781271908305, 134.97346975163995, -4]
+Velocity: 200
+
+Time = 0.9293590733621638
+
+* Fall 2 *
+Sphere
+X: 103.0
+Y: 57.0
+Z: 71
+Radius: 20
+Vector: [163.54904750699302, 115.11606777316248, 11]
+Velocity: 200
+Sphere
+X: 126.0
+Y: 353.0
+Z: 67
+Radius: 20
+Vector: [151.52868232973785, -130.5337444165814, 13]
+Velocity: 200
+
+Time = 1.05128
+
+* Fall 3 *
+Sphere
+X: 53.0
+Y: 246.0
+Z: 61
+Radius: 20
+Vector: [285.0, -73.99999999999989, -7]
+Velocity: 294.45033537083975
+Sphere
+X: 430.0
+Y: 208.0
+Z: 58
+Radius: 20
+Vector: [-82.99999999999999, -17.00000000000005, 15]
+Velocity: 84.72307831990054
+
+Time = 0.92459
+
+Kod
+===
+Se bifogat python program.
+

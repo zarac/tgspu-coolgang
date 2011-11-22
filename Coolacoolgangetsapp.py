@@ -23,6 +23,7 @@ class Circle2D:
         self.id = id
         self.canvas = canvas
         self.velocity = velocity
+        # INFO : Uträkning av vektor med hjälp av vinkel och hastighet. 
         self.vector = (self.velocity*math.cos(self.angle*(math.pi/180))),(self.velocity*math.sin(self.angle*(math.pi/180)))
 
     def update(self, elapsedTime):
@@ -49,8 +50,13 @@ class Sphere:
         self.velocity = velocity
         #self.vector = [self.velocity*math.cos(self.angle*(math.pi/180)), (self.velocity*math.sin(self.angle*(math.pi/180))), random.random()]
         self.vector = [self.velocity*math.cos(self.angle*(math.pi/180)), (self.velocity*math.sin(self.angle*(math.pi/180))), random.randint(-15, 15)]
-        print(self.vector)
-        print(self.radius)
+        print("Sphere")
+        print("X:", self.x)
+        print("Y:", self.y)
+        print("Z:", self.z)
+        print("Radius:", self.radius)
+        print("Vector:", self.vector)
+        print("Velocity:", self.velocity)
         drawSize = self.radius*(self.z/world.depth) + 5
         self.id = self.canvas.create_oval(x-drawSize, y-drawSize, x+drawSize, y+drawSize, fill="#"+str(random.randint(100,999)))
     
@@ -151,13 +157,15 @@ class World:
         y2 = event.y
         if x1==x2 and y1==y2:
             x1-=1
+        # INFO : Räknar ut avståndet med hälp av Pythagoras sats
         distance = math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2))
-        angleInRadians = math.acos((x2-x1)/distance)        
+        # INFO : Räknar ut vinkeln med hjälp av arccos (samt avstådent ovan).
+        angleInRadians = math.acos((x2-x1)/distance)
         angleInDegrees = math.degrees(angleInRadians)
         if(y1 > y2):
             angleInDegrees += (180-angleInDegrees)*2        
         #radius = random.randint(10,30)
-        sphere = Sphere(x1, y1, angleInDegrees, self.canvas)
+        sphere = Sphere(x1, y1, angleInDegrees, self.canvas, velocity=distance)
         self.entities.append(sphere)
         self.canvas.delete(self.currentLine)
         self.checkFutureCollisions3D(sphere)
@@ -213,6 +221,7 @@ class World:
             current += 1
 
     def checkCollision3D(self, first, second):
+        # INFO : Kollar faktisk kollision med hjälp av Pythagoras sats. Jämför avståndet mellan sfärernas centrum med deras sammanlagda radie.
         distanceSquared = math.pow(first.x - second.x, 2) + math.pow(first.y - second.y,2) + math.pow(first.z - second.z, 2)
         collisionDistanceSquared = math.pow(first.radius + second.radius, 2)
         if(collisionDistanceSquared >= distanceSquared):
@@ -242,14 +251,32 @@ class World:
     #   b = 2(X*Vx + Y*Vy + Z*Vz)
     #   c = X^2 + Y^2 + Z^2 - r^2
     def checkFutureCollision3D(self, entity, other):
+        # INFO : För att få ut tiden, t, tills då de två bollarna kolliderar så:
+        # INFO : Först hittar vi hur bollarna förhåller sig till varandra genom att sätta dena ena bollen i origo och ger den andra bollan de sammanlagda egenskaperna.
         deltaX, deltaY, deltaZ, deltaRadius, deltaVx, deltaVy, deltaVz = self.getDelta3D(entity, other)
+        # Vi sätter avståndet mellan bollarna till 0 för att hitta när dom kolliderar. (I detta avståndet från bollen till origo).
+        # INFO : Vi tar PQ - formeln
+        # INFO : sqrt((X+Vx*t)^2 + (Y+Vy*t)^2 + (Z+Vz*t)^2) = r
+        # INFO : (Vx^2 + Vy^2 + Vz^2)*t^2 + 2(X*Vx + Y*Vy + Z*Vz)*t + X^2 + Y^2 + Z^2 - r^2 = 0
+        # INFO : Vi förenklar ekvationen och delar upp den i tre delar : a, b, & c 
         a = math.pow(deltaVx, 2) + math.pow(deltaVy, 2) + math.pow(deltaVz, 2)
         b = (2*(deltaX*deltaVx)) + (2*(deltaY*deltaVy)) + (2*(deltaZ*deltaVz))
         c = math.pow(deltaX, 2) + math.pow(deltaY, 2) + math.pow(deltaZ, 2) - math.pow(deltaRadius, 2)
-
+        # INFO : Räknar ut högra delen av PQ-formeln (får ej vara mindre än 0).
         d = math.pow((-b)/(2*a), 2) - (c/a)
 
+        print("deltaX:", deltaX)
+        print("deltaY:", deltaY)
+        print("deltaRadius:", deltaRadius)
+        print("deltaVx:", deltaVx)
+        print("deltaVy:", deltaVy)
+        print("a:", a)
+        print("b:", b)
+        print("c:", c)
+        print("d:", d)
+
         if d >= 0:
+            # INFO : Räknar ut tiden för när kollision sker
             time = ((-b)/(2*a)) - math.sqrt(d)
             if(time >= 0):
                 posX = entity.x + (entity.vector[0]*time)
