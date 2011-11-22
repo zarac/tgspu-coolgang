@@ -39,32 +39,28 @@ class Circle2D:
         return self.canvas.coords(self.id)[1] + self.radius
 
 class Sphere:
-    def __init__(self, x, y, angle, canvas, radius=20, velocity=10):
+    def __init__(self, x, y, angle, canvas, radius=20, velocity=200):
         self.x = x
         self.y = y
-        self.z = random.randint(1, 3)
+        self.z = random.randint(20, 80)
         self.angle = angle
         self.canvas = canvas
         self.radius = radius
         self.velocity = velocity
         #self.vector = [self.velocity*math.cos(self.angle*(math.pi/180)), (self.velocity*math.sin(self.angle*(math.pi/180))), random.random()]
-        self.vector = [self.velocity*math.cos(self.angle*(math.pi/180)), (self.velocity*math.sin(self.angle*(math.pi/180))), 0.01]
-        #print(self.vector)
-        drawSize = self.radius*self.z
+        self.vector = [self.velocity*math.cos(self.angle*(math.pi/180)), (self.velocity*math.sin(self.angle*(math.pi/180))), random.randint(-15, 15)]
+        print(self.vector)
+        print(self.radius)
+        drawSize = self.radius*(self.z/world.depth) + 5
         self.id = self.canvas.create_oval(x-drawSize, y-drawSize, x+drawSize, y+drawSize, fill="#"+str(random.randint(100,999)))
-        self.textid = self.canvas.create_text(self.x, self.y, text=str(self.z))
     
     def update(self, elapsedTime):
-        self.x += self.vector[0]
-        self.y += self.vector[1]
-        self.z += self.vector[2]
+        self.x += self.vector[0] * elapsedTime
+        self.y += self.vector[1] * elapsedTime
+        self.z += self.vector[2] * elapsedTime
         #drawSize = (self.radius*0.75*2/100)*self.z + self.radius*0.25*2
-        drawSize = self.radius*self.z
+        drawSize = self.radius*(self.z/world.depth) + 5
         self.canvas.coords(self.id, self.x-drawSize, self.y-drawSize, self.x+drawSize, self.y+drawSize)
-        self.canvas.coords(self.textid, self.x, self.y)
-        temp = self.z
-        temp = int(temp)
-        self.canvas.itemconfig(self.textid, text=str(temp))
 
     def bounceZ(self):
         self.vector[2] = -self.vector[2]
@@ -116,7 +112,7 @@ class World:
         self.tk.protocol("WM_DELETE_WINDOW", self.endWorld)
         self.canvas = Canvas(tk, width=640, height=480, bg="white")
         self.canvas.pack()
-        self.depth = 5
+        self.depth = 100
         self.lastUpdateTime=0
         self.entities = []
         self.collisions = []
@@ -204,8 +200,8 @@ class World:
         current = 1
         for entity in self.entities:
             for other in self.entities[current:]:
-                if(self.checkCollisions3D(entity, other)):
-                   self.handleCollisions3D(entity, other)
+                if(self.checkCollision3D(entity, other)):
+                   self.handleCollision3D(entity, other)
             current += 1
 
     def checkCollisions2D(self):
@@ -260,7 +256,7 @@ class World:
                 posY = entity.y + (entity.vector[1]*time)
                 posZ = entity.z + (entity.vector[2]*time)
                 if not(posX < 0 or posX > 680 or posY < 0 or posY > 480 or posZ < 0 or posZ > self.depth):
-                    self.createCollissionIfNotExisting(entity, other, time)
+                    self.createCollisionIfNotExisting(entity, other, time)
             
     #   Uträkningar ! ( som är coola )
     #   a = Vx^2 + Vy^2
@@ -385,7 +381,7 @@ class World:
         if(y-r <= 0 or y+r >= h):
             entity.bounceY()
             self.checkFutureCollisions3D(entity)
-        if(z-r <= 0 or z+r >= d):
+        if(z <= 0 or z >= d):
             entity.bounceZ()
             self.checkFutureCollisions3D(entity)
 
@@ -424,12 +420,12 @@ class World:
         collisions = []
         self.playing = False
 
-    def toggleDebug(self):
+    def toggleDebug(self, event):
         self._debug = not(self._debug)
         if self._debug:
             print("debug on")
 
-    def togglePlaying(self):
+    def togglePlaying(self, event):
         self.playing = not(self.playing)
 
     def update(self, elapsedTime):
