@@ -3,6 +3,19 @@ import math
 import random
 import time
 
+#Traceback (most recent call last):
+#  File "Coolacoolgangetsapp.py", line 251, in <module>
+#    world.loop()
+#  File "Coolacoolgangetsapp.py", line 111, in loop
+#    self.update(elapsedTimeSinceLastUpdate)
+#  File "Coolacoolgangetsapp.py", line 241, in update
+#    collision.update(elapsedTime)
+#  File "Coolacoolgangetsapp.py", line 42, in update
+#    self.canvas.coords(self.lineid, (self.entity1.getX(),
+#  File "Coolacoolgangetsapp.py", line 23, in getX
+#    return self.canvas.coords(self.id)[0] + self.radius
+#IndexError: list index out of range
+
 class Circle2D:
     def __init__(self, id, canvas, angle, radius=10, velocity=100):
         self.angle = angle
@@ -68,10 +81,13 @@ class Sphere:
     def getY(self):
         return self.y
     
-class Collission:
+class Collision:
     def __init__(self, canvas, entity1, entity2, time):
-        self.lineid = canvas.create_line(entity1.getX(), entity1.getY(), entity2.getX(), entity2.getY())
-        self.textid = canvas.create_text(entity1.getX() - (entity1.getX() + entity2.getX())/2, entity1.getY() - (entity1.getY() + entity2.getY())/2, text=str(time))
+        self.lineid = canvas.create_line(entity1.getX(), entity1.getY(),
+                entity2.getX(), entity2.getY())
+        self.textid = canvas.create_text(entity1.getX() - (entity1.getX() -
+            entity2.getX())/2, entity1.getY() - (entity1.getY() -
+                entity2.getY())/2, text=str(time))
         self.canvas = canvas
         self.entity1 = entity1
         self.entity2 = entity2
@@ -79,8 +95,11 @@ class Collission:
         
     def update(self, elapsedtime):
         self.time = self.time - elapsedtime
-        self.canvas.coords(self.lineid, (self.entity1.getX(), self.entity1.getY(), self.entity2.getX(), self.entity2.getY()))
-        self.canvas.coords(self.textid, (self.entity1.getX() - (self.entity1.getX() - self.entity2.getX())/2, self.entity1.getY() - (self.entity1.getY() - self.entity2.getY())/2))
+        self.canvas.coords(self.lineid, (self.entity1.getX(),
+            self.entity1.getY(), self.entity2.getX(), self.entity2.getY()))
+        self.canvas.coords(self.textid, (self.entity1.getX() -
+            (self.entity1.getX() - self.entity2.getX())/2, self.entity1.getY()
+            - (self.entity1.getY() - self.entity2.getY())/2))
         self.canvas.itemconfigure(self.textid, text=str(self.time))
 
     def destroyMe(self):
@@ -89,6 +108,7 @@ class Collission:
 
 class World:
     def __init__(self, tk):
+        self._debug=False
         self.running=True
         self.playing=False
         self.drawFPS=False
@@ -111,9 +131,14 @@ class World:
 
     def initBindings2D(self):
         self.canvas.bind("<Button-1>", self.createLine)
-        self.canvas.bind("<Button-3>", self.togglePlaying)
         self.canvas.bind("<B1-Motion>", self.moveLine)
         self.canvas.bind("<B1-ButtonRelease>", self.createCircle)
+        self.canvas.bind("<Button-3>", lambda x: self.togglePlaying())
+        self.tk.bind("<space>", lambda x: self.togglePlaying())
+        self.tk.bind("<BackSpace>", lambda x: self.reverse())
+        self.tk.bind("r", lambda x: self.reset())
+        self.tk.bind("c", lambda x: self.recalculateFutureCollisions())
+        self.tk.bind("d", lambda x: self.toggleDebug())
 
     def createLine(self, event):        
         self.currentLine = self.canvas.create_line(event.x, event.y, event.x, event.y)
@@ -150,13 +175,15 @@ class World:
         if(x1==x2 and y1==y2):
             x1-=1
         distance = math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2))
+        velocity = distance
         angleInRadians = math.acos((x2-x1)/distance)        
         angleInDegrees = math.degrees(angleInRadians)
         if(y1 > y2):
             angleInDegrees += (180-angleInDegrees)*2        
         radius = random.randint(10,30)
         circleId = self.canvas.create_oval(x1-radius,y1-radius,x1+radius,y1+radius, tags="circle", fill="#"+str(random.randint(100,999)))
-        circle = Circle2D(circleId, self.canvas, angleInDegrees, radius)
+        circle = Circle2D(circleId, self.canvas, angleInDegrees, radius,
+                velocity)
         self.entities.append(circle)
         self.canvas.delete(self.currentLine)
         self.checkFutureCollisions2D(circle)
@@ -267,13 +294,18 @@ class World:
                 posX = entity.getX() + (entity.vector[0]*time)
                 posY = entity.getY() + (entity.vector[1]*time)
                 if not(posX < 0 or posX > 680 or posY < 0 or posY > 480):                    
-                    self.createCollissionIfNotExisting(entity, other, time)
+                    self.createCollisionIfNotExisting(entity, other, time)
             
-    def createCollissionIfNotExisting(self, entity1, entity2, time):
-        for collission in self.collisions:
-            if (collission.entity1.id == entity1.id and collission.entity2.id == entity2.id) or (collission.entity1.id == entity2.id and collission.entity2.id == entity1.id):
+    def createCollisionIfNotExisting(self, entity1, entity2, time):
+        for collision in self.collisions:
+            if (collision.entity1.id == entity1.id and collision.entity2.id ==
+                    entity2.id) or (collision.entity1.id == entity2.id and
+                            collision.entity2.id == entity1.id):
                 return
-        self.collisions.append(Collission(self.canvas, entity1, entity2, time))
+        if self._debug:
+            print("collision created: " + str(entity1.id) + " <> " +
+                    str(entity2.id) + " in " + str(time))
+        self.collisions.append(Collision(self.canvas, entity1, entity2, time))
 
     def getDelta3D(self, first, second):
         deltaX = second.x - first.x
@@ -304,12 +336,34 @@ class World:
         
     def handleCollision2D(self, first, second):
         self.removeCollisionObject(first,second)
+        # TODO : find extra distance and reverse it (add it to out angle)
+        #distance = math.sqrt(math.pow(first.getX() - second.getX(), 2) +
+                #math.pow(first.getY() - second.getY(), 2))
         firstAngle = first.angle
         secondAngle = second.angle
         first.setAngle(secondAngle)
         second.setAngle(firstAngle)
         self.checkFutureCollisions2D(first)
         self.checkFutureCollisions2D(second)
+
+    def recalculateFutureCollisions(self):
+        if self._debug:
+            print("recalculateFutureCollisions():")
+        for collision in self.collisions:
+            self.canvas.delete(collision.lineid)
+            self.canvas.delete(collision.textid)
+        self.collisions = []
+        current = 1
+        for left in self.entities:
+            if self._debug:
+                print("left", left.id)
+            for right in self.entities[current:]:
+                if self._debug:
+                    print("right", right.id)
+                if left.id == right.id:
+                    continue
+                self.checkFutureCollision(left, right)            
+            current += 1
 
     def removeCollisionObject(self, first, second):
         for collision in self.collisions:
@@ -340,20 +394,42 @@ class World:
         x = coords[0]
         y = coords[1]     
         radius = entity.radius
-        #w = self.canvas["width"]
-        w = 640
-        #h = self.canvas["height"]
-        h = 480
-        if(x <= 0 or x+radius*2 >= w):
+        w = int(self.canvas["width"])
+        h = int(self.canvas["height"])
+        # TODO : only reverse if direction is wrong (to allow outside balls to
+        # travel inside)
+        if(x < 0 or x+radius*2 >= w):
             angle = entity.angle
             entity.setAngle(angle+180-((angle-180)*2))
             self.checkFutureCollisions2D(entity)
-        if(y <= 0 or y+radius*2 >= h):
+            # TODO : find extra distance and reverse it (add it to out angle)
+        elif(y < 0 or y+radius*2 >= h):
             angle = entity.angle
             entity.setAngle(angle+((180-angle)*2))
             self.checkFutureCollisions2D(entity)
+            # TODO : find extra distance and reverse it (add it to out angle)
 
-    def togglePlaying(self, event):
+    def reverse(self):
+        for entity in self.entities:
+            entity.setAngle(entity.angle+180)
+        self.recalculateFutureCollisions()
+
+    def reset(self):
+        for entity in self.entities:
+            self.canvas.delete(entity.id)
+        self.entities = []
+        for collision in self.collisions:
+            self.canvas.delete(collision.lineid)
+            self.canvas.delete(collision.textid)
+        collisions = []
+        self.playing = False
+
+    def toggleDebug(self):
+        self._debug = not(self._debug)
+        if self._debug:
+            print("debug on")
+
+    def togglePlaying(self):
         self.playing = not(self.playing)
 
     def update(self, elapsedTime):
@@ -368,7 +444,7 @@ class World:
                     collision.destroyMe()
                     self.collisions.remove(collision)
             #self.checkCollisions2D()
-            #self.checkCollisions3D()
+            self.checkCollisions3D()
 
     def endWorld(self):
         self.running=False
