@@ -43,20 +43,21 @@ class Sphere:
     def __init__(self, x, y, angle, canvas, radius=20, velocity=200):
         self.x = x
         self.y = y
-        self.z = random.randint(20, 80)
+        #self.z = random.randint(20, 80)
+        self.z = 40
         self.angle = angle
         self.canvas = canvas
         self.radius = radius
         self.velocity = velocity
         #self.vector = [self.velocity*math.cos(self.angle*(math.pi/180)), (self.velocity*math.sin(self.angle*(math.pi/180))), random.random()]
         self.vector = [self.velocity*math.cos(self.angle*(math.pi/180)), (self.velocity*math.sin(self.angle*(math.pi/180))), random.randint(-15, 15)]
-        print("Sphere")
-        print("X:", self.x)
-        print("Y:", self.y)
-        print("Z:", self.z)
-        print("Radius:", self.radius)
-        print("Vector:", self.vector)
-        print("Velocity:", self.velocity)
+        #print("Sphere")
+        #print("X:", self.x)
+        #print("Y:", self.y)
+        #print("Z:", self.z)
+        #print("Radius:", self.radius)
+        #print("Vector:", self.vector)
+        #print("Velocity:", self.velocity)
         drawSize = self.radius*(self.z/world.depth) + 5
         self.id = self.canvas.create_oval(x-drawSize, y-drawSize, x+drawSize, y+drawSize, fill="#"+str(random.randint(100,999)))
     
@@ -165,7 +166,7 @@ class World:
         if(y1 > y2):
             angleInDegrees += (180-angleInDegrees)*2        
         #radius = random.randint(10,30)
-        sphere = Sphere(x1, y1, angleInDegrees, self.canvas, velocity=distance)
+        sphere = Sphere(x1, y1, angleInDegrees, self.canvas, velocity=distance , radius=20) )
         self.entities.append(sphere)
         self.canvas.delete(self.currentLine)
         self.checkFutureCollisions3D(sphere)
@@ -254,10 +255,10 @@ class World:
         # INFO : För att få ut tiden, t, tills då de två bollarna kolliderar så:
         # INFO : Först hittar vi hur bollarna förhåller sig till varandra genom att sätta dena ena bollen i origo och ger den andra bollan de sammanlagda egenskaperna.
         deltaX, deltaY, deltaZ, deltaRadius, deltaVx, deltaVy, deltaVz = self.getDelta3D(entity, other)
-        # Vi sätter avståndet mellan bollarna till 0 för att hitta när dom kolliderar. (I detta avståndet från bollen till origo).
-        # INFO : Vi tar PQ - formeln
-        # INFO : sqrt((X+Vx*t)^2 + (Y+Vy*t)^2 + (Z+Vz*t)^2) = r
-        # INFO : (Vx^2 + Vy^2 + Vz^2)*t^2 + 2(X*Vx + Y*Vy + Z*Vz)*t + X^2 + Y^2 + Z^2 - r^2 = 0
+        # INFO : Vi sätter avståndet _mellan_ bollarna till 0 för att hitta när dom kolliderar. (I detta avståndet från bollen till origo).
+        # INFO : Med andra ord: avståndet = r => sqrt((X+Vx*t)^2 + (Y+Vy*t)^2 + (Z+Vz*t)^2) = r
+        # INFO : Vi tar PQ - formeln : ax^2 + bx + c = 0
+        # INFO : Tillämpar den: (Vx^2 + Vy^2 + Vz^2)*t^2 + 2(X*Vx + Y*Vy + Z*Vz)*t + X^2 + Y^2 + Z^2 - r^2 = 0
         # INFO : Vi förenklar ekvationen och delar upp den i tre delar : a, b, & c 
         a = math.pow(deltaVx, 2) + math.pow(deltaVy, 2) + math.pow(deltaVz, 2)
         b = (2*(deltaX*deltaVx)) + (2*(deltaY*deltaVy)) + (2*(deltaZ*deltaVz))
@@ -265,15 +266,15 @@ class World:
         # INFO : Räknar ut högra delen av PQ-formeln (får ej vara mindre än 0).
         d = math.pow((-b)/(2*a), 2) - (c/a)
 
-        print("deltaX:", deltaX)
-        print("deltaY:", deltaY)
-        print("deltaRadius:", deltaRadius)
-        print("deltaVx:", deltaVx)
-        print("deltaVy:", deltaVy)
-        print("a:", a)
-        print("b:", b)
-        print("c:", c)
-        print("d:", d)
+        #print("deltaX:", deltaX)
+        #print("deltaY:", deltaY)
+        #print("deltaRadius:", deltaRadius)
+        #print("deltaVx:", deltaVx)
+        #print("deltaVy:", deltaVy)
+        #print("a:", a)
+        #print("b:", b)
+        #print("c:", c)
+        #print("d:", d)
 
         if d >= 0:
             # INFO : Räknar ut tiden för när kollision sker
